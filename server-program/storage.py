@@ -12,4 +12,3 @@ class Storage:
             index = dataIndex.hash()
         
         if mainMachineFlag:
-            

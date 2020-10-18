@@ -1,13 +1,14 @@
-from concurrent.futures import ThreadPoolExecutor
+from asynclib.taskManager import TaskManager
 
 class Application:
     pool = []
     clients = []
     
-    def __init__(self, mainMachineFlag, numberOfThreads, mainMachineAddress = '127.0.0.1'):
+    def __init__(self, mainMachineFlag : bool, numberOfThreads : int, mainMachineAddress : str = '127.0.0.1'):
         self.mainMachineFlag = mainMachineFlag
         # thread pool.
-        self.threadPool = ThreadPoolExecutor(4)
+        self.taskManager = TaskManager(4)
+        
         
     def addConnection(self, connection, clusterFlag):
         if clusterFlag:
