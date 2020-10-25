@@ -49,6 +49,7 @@ class ObjectMessage:
             bytearray: Bytearray that represents the value of this ObjectMessage.
         """
         data = None
+        
         try:
             data = self.value.to_bytes()
         except AttributeError:
@@ -59,8 +60,13 @@ class ObjectMessage:
         
         if isinstance(data, str):
             data = data.encode('ascii')
+        
             
-        return self.header.encode('ascii') + bytearray(4 - len(self.header)) + data
+        return ('o' + self.header).encode('ascii') + bytearray(4 - len(self.header)) + data
+    
+    @staticmethod
+    def is_object_message(data):
+        return data[:1].decode('ascii') == 'o'
     
     @staticmethod
     def extract_header(data):
@@ -72,7 +78,7 @@ class ObjectMessage:
         Returns:
             [type]: The ASCII string that represents the header of the bytearray data.
         """
-        return data[:4].decode('ascii')
+        return data[1:5].decode('ascii')
         
     @staticmethod
     def from_bytes(data, baseClass):
@@ -88,9 +94,11 @@ class ObjectMessage:
         Returns:
             [type]: [description]
         """
+        if not ObjectMessage.is_object_message(data):
+            raise ValueError('The data is not an object message.')
         header = ObjectMessage.extract_header(data)
         value = None
-        data = data[4:]
+        data = data[5:]
         try:
             value = baseClass.from_bytes(data)
         except AttributeError:

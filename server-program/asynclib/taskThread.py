@@ -2,9 +2,9 @@
 # This code is licensed under MIT license (see LICENSE for details).
 
 from threading import Lock, RLock, Thread
-from workException import WorkException
-from workItem import WorkItem
-from concurrentBag import ConcurrentBag
+from asynclib.workException import WorkException
+from asynclib.workItem import WorkItem
+from asynclib.concurrentBag import ConcurrentBag
 
 # a work of a TaskThread object.
 def worker(taskThread):

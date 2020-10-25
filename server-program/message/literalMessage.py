@@ -39,8 +39,8 @@ class LiteralMessage:
             valueFormat = 's'
             format += 'i{}s'.format(aux)
         elif isinstance(self.value, int):
-            valueFormat = 'l'
-            format += 'l'
+            valueFormat = 'i'
+            format += 'i'
         elif isinstance(self.value, float):
             valueFormat = 'f'
             format += 'f'
@@ -50,11 +50,18 @@ class LiteralMessage:
             
         valueFormat = valueFormat.encode('ascii')
         
+        pack = None
         if aux is not None:
-            return struct.pack(format, valueFormat, aux, self.value)
+            pack = struct.pack(format, valueFormat, aux, self.value)
         else:
-            return struct.pack(format, valueFormat, self.value)
+            pack = struct.pack(format, valueFormat, self.value)
             
+        return 'l'.encode('ascii') + pack
+    
+    @staticmethod
+    def is_literal_message(data):
+        return data[:1].decode('ascii') == 'l'
+        
     @staticmethod
     def from_bytes(data):
         """Convert a bytearray into a LiteralMessage.
@@ -65,6 +72,10 @@ class LiteralMessage:
         Returns:
             [type]: A LiteralObject from the bytearray.
         """
+        if not LiteralMessage.is_literal_message(data):
+            raise ValueError("The data is not a literal message.")
+        data = data[1:]
+        
         format = '!c'
         valueFormat, = struct.unpack(format, data[:1])
         data = data[1:]

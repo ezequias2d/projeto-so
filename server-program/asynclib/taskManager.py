@@ -4,8 +4,8 @@
 import os
 import random
 
-from taskThread import TaskThread
-from workItem import WorkItem
+from asynclib.taskThread import TaskThread
+from asynclib.workItem import WorkItem
 
 class TaskManager:
     """Manages a pool of task threads that execute asynchronous functions.

@@ -26,3 +26,4 @@ def object_message_test():
     print(messageDecoded.value)
 
 literal_message_example()
+object_message_test()
