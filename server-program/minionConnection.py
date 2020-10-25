@@ -24,8 +24,18 @@ class MinionConnection(Connection):
         
         return result.value
     
-    def send_job(self, job):
-        pass
+    def do_job(self, job, filename, client_id, blocking=True):
+        self.acquire(blocking)
+        
+        jobMessage = LiteralMessage(job)
+        clientIdMessage = LiteralMessage(client_id)
+        filenameMessage = LiteralMessage(filename)
+        
+        self.send_message(jobMessage, False)
+        self.send_message(clientIdMessage, False)
+        self.send_message(filenameMessage, False)
+        
+        self.release(blocking)
         
         
         

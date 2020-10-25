@@ -73,6 +73,10 @@ class Connection:
         
         data = self._conn.recv(1024)
         
+        if len(data) == 0:
+            self._closed = True
+            raise Exception('Connection is closed with the {}.'.format(self._addr))
+        
         output = None
         
         if LiteralMessage.is_literal_message(data):
