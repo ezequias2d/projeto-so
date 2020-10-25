@@ -8,6 +8,7 @@ import asynclib
 from asynclib.taskManager import *
 
 
+from storage import Storage
 from collections import deque
 
 from clientConnection import ClientConnection
@@ -26,8 +27,9 @@ class Server:
             port (int): Port.
         """
         #socket.gethostbyname(socket.gethostname())
-        self.host = 'localhost'
+        self.host = '127.0.0.1'
         self.port = port
+        self.storage = Storage()
         self.taskManager = TaskManager('server_thread_')
         
         self.minions = deque()
@@ -66,23 +68,27 @@ class Server:
         while self.continueListening:
             conn, addr = self.socket.accept()
             
-            logging.info("connected to {}:{}".format(addr[0], addr[1]))
-            print("connected to {}:{}".format(addr[0], addr[1]))
-            
             messageData = conn.recv(1024)
             message = LiteralMessage.from_bytes(messageData)
-                       
+            
+            outputLog = "connected to {}:{} as a ".format(addr[0], addr[1])
+            
             if message.value == tokens.MINION_TOKEN:
                 
                 self.minions_lock.acquire()
                 self.minions.append(MinionConnection(conn, addr))
                 self.minions_lock.release()
-                
+                outputLog += "minion"
             elif message.value == tokens.CLIENT_TOKEN:
-                
                 self.clients_lock.acquire()
                 self.clients.append(ClientConnection(conn, addr))
-                self.clients_lock.acquire()
+                self.clients_lock.release()
+                outputLog += "client"
+            else:
+                outputLog += "undefined"
+
+            logging.info(outputLog)
+            print(outputLog)
     
     def minions_thread(self):
         self.continueMinions = True
@@ -93,12 +99,13 @@ class Server:
             try:
                 minion = self.minions.popleft()
             except IndexError:
+                self.minions_lock.release()
                 continue
         
-            response = minion.update()
+            response = minion.receive_message()
             
-            if not response is None:
-                # check if have a reponse
+            # check if have a reponse
+            if response is not None:
                 
                 # acquire the client lock.
                 self.clients_lock.acquire()
@@ -121,6 +128,8 @@ class Server:
             self.minions.append(minion)
             self.minions_lock.release()
         
+        
+        # close connections with minions.
         self.minions_lock.acquire()
         
         for connection in self.minions:
@@ -138,17 +147,43 @@ class Server:
             try:
                 client = self.clients.popleft()
             except IndexError:
+                self.clients_lock.release()
                 continue
         
-            client.update()
-        
+            try:
+                message = client.receive_message().value
+            except Exception as e:
+                print(e)
+                logging.info(e)
+                continue
+            
+            if message.value == tokens.GET_AVALIABLE_CORES:
+                self.get_avaliable_cores()
+                
             self.clients.append(client)
         
             self.clients_lock.release()
         
+        # close connections with clients
         self.clients_lock.acquire()
         
         for connection in self.clients:
             connection.close()
             
         self.clients_lock.release()
+        
+        
+    def try_decode_storages(self, connection, token):
+        if token == tokens.GET_FILE_SIZE:
+            pass
+    
+    def get_avaliable_cores(self):
+        self.minions_lock.acquire()
+        
+        avaliable = 0
+        for minion in self.minions:
+            avaliable += minion.get_avaliable_cores()
+        
+        self.minions_lock.release()
+        
+        return avaliable
