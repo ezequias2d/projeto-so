@@ -21,13 +21,17 @@ class MinionApplication(BaseApplication):
         
     def loop(self):
         while not self.is_closed():
-            message = self.receive_message(True, 1.0)
-            if message is not None:
-                message = message.value
-                if self.decode_job(message):
-                    pass
-                else:
-                    print("The job is not valid, {}".format(message))
+            try:
+                message = self.receive_message(True, 1.0)
+                if message is not None:
+                    message = message.value
+                    if self.decode_job(message):
+                        pass
+                    else:
+                        print("The job is not valid, {}".format(message))
+            except Exception as e:
+                print(e)
+                self.close()
     
     def decode_job(self, message):        
         action = None
