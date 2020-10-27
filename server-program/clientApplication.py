@@ -45,6 +45,22 @@ class ClientApplication(BaseApplication):
         self.send_literal(tokens.REMOVE_FILE)
         self.send_literal(filename)
         
+    def see_a_logfile(self):
+        files = [logfile for logfile in self.get_files_from_storage() if os.path.splitext(logfile)[1].lower() == '.log']
+        count = 0
+        for logfile in files:
+            print('{} - {}'.format(count, logfile))
+            count += 1
+        
+        index = int(input('Index:'))
+        filename = files[index]
+        
+        file = self.get_file(filename)
+        file = io.BytesIO(file).read()
+        
+        print('Log:')
+        print(file.decode('UTF-8'))
+        
     def print_commands(self):
         print('Commands:')
         print('0 - Exit')
@@ -57,6 +73,7 @@ class ClientApplication(BaseApplication):
         print('7 - Send File to Storage.')
         print('8 - Show Image File from Storage.')
         print('9 - Remove File from Storage.')
+        print('10 - See a logfile.')
         
     def menu(self):
         while not self.is_closed():
@@ -82,6 +99,8 @@ class ClientApplication(BaseApplication):
                 self.show_image_file_from_storage()
             elif cmd == 9:
                 self.remove_file()
+            elif cmd == 10:
+                self.see_a_logfile()
 
 host = input('Host: ')
 ClientApplication(host, 50007)

@@ -144,8 +144,9 @@ class Server:
             try:
                 message = client.receive_message().value
             except Exception as e:
-                print(e)
-                logging.info(e)
+                message = "client '{}':{}".format(client.get_addr(), e)
+                print(message)
+                logging.info(message)
                 self.clients_lock.release()
                 continue
             
