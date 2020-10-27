@@ -227,7 +227,9 @@ class Server:
             minionIndex = random.randrange(0, len(self.minions))
             
             minion = self.minions[minionIndex]
-            coreIndex = minion.send_job(filename, dstfilename, token)
+            
+            imagedata = self.storage.get_file(filename)
+            coreIndex = minion.send_job(imagedata, dstfilename, token)
             
             loginfotext = "The Job '{}' submitted successfully by ty the client {} to the core {} of the minion {}".format(
                 tokens.token_to_str(token),

@@ -47,22 +47,21 @@ class MinionApplication(BaseApplication):
         else:
              return False
          
-        filename = self.receive_message().value
+        imagedata = self.receive_message().value
         dstfilename = self.receive_message().value
             
-        task = self.pool.run(self.job_thread, args = (filename, dstfilename, action))
+        task = self.pool.run(self.job_thread, args = (imagedata, dstfilename, action))
         self.send_literal(task.index)
         
         return True
     
-    def job_thread(self, filename, dstfilename, action):
-        img = self.load_image(filename)
+    def job_thread(self, imagedata, dstfilename, action):
+        img = self.load_image(imagedata)
         img = img.transpose(action)
         self.save_image(img, dstfilename)
     
-    def load_image(self, filename):
-        file = self.get_file(filename)
-        return Image.open(io.BytesIO(file))
+    def load_image(self, imagedata):
+        return Image.open(io.BytesIO(imagedata))
     
     def save_image(self, image, filename):
         bytes = io.BytesIO()
