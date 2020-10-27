@@ -106,9 +106,13 @@ class Server:
                 self.minions_lock.release()
                 continue
         
-            
-            message = minion.receive_message(True, 1.0)
-            
+            try:
+                message = minion.receive_message(True, 1.0)
+            except Exception as e:
+                print(e)
+                logging.info(e)
+                self.clients_lock.release()
+                continue
             
             if message is not None:
                 message = message.value
@@ -137,7 +141,13 @@ class Server:
                 self.clients_lock.release()
                 continue
             
-            message = client.receive_message().value
+            try:
+                message = client.receive_message().value
+            except Exception as e:
+                print(e)
+                logging.info(e)
+                self.clients_lock.release()
+                continue
             
             if self.try_decode_storages(client, message):
                 pass

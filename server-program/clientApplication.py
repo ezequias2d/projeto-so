@@ -39,7 +39,11 @@ class ClientApplication(BaseApplication):
         
         if messageToken == tokens.INFO_MESSAGE or messageToken == tokens.ERROR_MESSAGE:
             print(message)
-        
+            
+    def remove_file(self):
+        filename = input("Filename:")
+        self.send_literal(tokens.REMOVE_FILE)
+        self.send_literal(filename)
         
     def print_commands(self):
         print('Commands:')
@@ -52,6 +56,7 @@ class ClientApplication(BaseApplication):
         print('6 - See Files in Storage.')
         print('7 - Send File to Storage.')
         print('8 - Show Image File from Storage.')
+        print('9 - Remove File from Storage.')
         
     def menu(self):
         while not self.is_closed():
@@ -75,6 +80,8 @@ class ClientApplication(BaseApplication):
                 self.send_file_to_storage()
             elif cmd == 8:
                 self.show_image_file_from_storage()
+            elif cmd == 9:
+                self.remove_file()
 
 host = input('Host: ')
 ClientApplication(host, 50007)
