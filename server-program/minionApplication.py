@@ -57,15 +57,17 @@ class MinionApplication(BaseApplication):
     
     def job_thread(self, imagedata, dstfilename, action):
         img = self.load_image(imagedata)
+        format = img.format
+        
         img = img.transpose(action)
-        self.save_image(img, dstfilename)
+        self.save_image(img, dstfilename,format)
     
     def load_image(self, imagedata):
         return Image.open(io.BytesIO(imagedata))
     
-    def save_image(self, image, filename):
+    def save_image(self, image, filename, format):
         bytes = io.BytesIO()
-        image.save(bytes, image.format)
+        image.save(bytes, format)
         bytes = bytes.getvalue()
         
         self.send_literal(tokens.SAVE_FILE)
