@@ -53,15 +53,29 @@ class Server:
         clientThread = threading.Thread(target=self.clients_thread, name='clients_thread')
         clientThread.start()
         
+        exit = False
+        while not exit:
+            command = input("Enter 'exit' to exit:")
+            if command.lower() == 'exit':
+                self.continueListening = False
+                self.continueMinions = False
+                self.continueClients = False
+                exit = True
+        
         listeningThread.join()
         minionsThread.join()
         clientThread.join()
-        
                 
     def newConnectionTask(self):
         self.continueListening = True
         while self.continueListening:
-            conn, addr = self.socket.accept()
+            try:
+                self.socket.settimeout(1)
+                conn, addr = self.socket.accept()
+            except BaseException:
+                self.socket.settimeout(None)
+                continue
+            self.socket.settimeout(None)
             
             connection = Connection(conn, addr)
             message = connection.receive_message()
