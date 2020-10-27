@@ -44,6 +44,11 @@ class ClientApplication(BaseApplication):
         filename = input("Filename:")
         self.send_literal(tokens.REMOVE_FILE)
         self.send_literal(filename)
+        result = self.receive_message(True, 1.0)
+        if result is not None:
+            if result.value == tokens.ERROR_MESSAGE or result.value == tokens.INFO_MESSAGE:
+                message = self.receive_message().value
+                print(message)
         
     def see_a_logfile(self):
         files = [logfile for logfile in self.get_files_from_storage() if os.path.splitext(logfile)[1].lower() == '.log']

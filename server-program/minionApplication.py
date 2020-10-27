@@ -3,17 +3,18 @@ import tokens
 import connection
 import io
 import os
+import threading
 from PIL import Image
 from message.literalMessage import LiteralMessage
 from baseApplication import BaseApplication
 import asynclib
-from asynclib.taskManager import *
+
 
 class MinionApplication(BaseApplication):
     
     def __init__(self, host, port):        
         super().__init__(host, port, tokens.MINION_TOKEN)
-        self.pool = TaskManager('minion_{}_{}_thread_'.format(host, port))
+        self.pool = asynclib.taskManager.TaskManager('minion_thread_')
         
         self.loop()
         self.pool.join()
@@ -51,6 +52,7 @@ class MinionApplication(BaseApplication):
         dstfilename = self.receive_message().value
             
         task = self.pool.run(self.job_thread, args = (imagedata, dstfilename, action))
+        print("A job started in the core '{}', Job: {}, and save in: {}".format(task.index, tokens.token_to_str(message), dstfilename))
         self.send_literal(task.index)
         
         return True
@@ -61,6 +63,9 @@ class MinionApplication(BaseApplication):
         
         img = img.transpose(action)
         self.save_image(img, dstfilename,format)
+        
+        threadIndex = threading.current_thread().getName().split('_')[-1]
+        print("The job of the core '{}' is finished, new file created in storage with the name {}.".format(threadIndex, dstfilename))
     
     def load_image(self, imagedata):
         return Image.open(io.BytesIO(imagedata))

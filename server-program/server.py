@@ -5,10 +5,6 @@ import threading
 import tokens
 import random
 
-import asynclib
-from asynclib.taskManager import *
-
-
 from storage import Storage
 from collections import deque
 
@@ -27,11 +23,9 @@ class Server:
         Args:
             port (int): Port.
         """
-        #socket.gethostbyname(socket.gethostname())
         self.host = host
         self.port = port
         self.storage = Storage()
-        self.taskManager = TaskManager('server_thread_')
         
         self.minions = deque()
         self.minions_lock = threading.Lock()
@@ -173,39 +167,47 @@ class Server:
         
         
     def try_decode_storages(self, connection, token):
-        if token == tokens.GET_FILE_SIZE:
-            filename = connection.receive_message().value
-            size = self.storage.get_file_size(filename)
+        try:
+            if token == tokens.GET_FILE_SIZE:
+                filename = connection.receive_message().value
+                size = self.storage.get_file_size(filename)
             
-            connection.send_message(LiteralMessage(size))
-        elif token == tokens.IS_FILE:
-            filename = connection.receive_message().value
-            result = self.storage.is_file(filename)
-            connection.send_message(LiteralMessage(result))
+                connection.send_message(LiteralMessage(size))
+            elif token == tokens.IS_FILE:
+                filename = connection.receive_message().value
+                result = self.storage.is_file(filename)
+                connection.send_message(LiteralMessage(result))
             
-        elif token == tokens.GET_NUMBER_OF_FILES:
-            number = self.storage.get_number_of_files()
-            connection.send_message(LiteralMessage(number))
+            elif token == tokens.GET_NUMBER_OF_FILES:
+                number = self.storage.get_number_of_files()
+                connection.send_message(LiteralMessage(number))
             
-        elif token == tokens.GET_NAME_OF_FILE:
-            index = connection.receive_message().value
-            name = self.storage.get_name_of_file(index)
-            connection.send_message(LiteralMessage(name))
+            elif token == tokens.GET_NAME_OF_FILE:
+                index = connection.receive_message().value
+                name = self.storage.get_name_of_file(index)
+                connection.send_message(LiteralMessage(name))
             
-        elif token == tokens.SAVE_FILE:
-            filename = connection.receive_message().value
-            data = connection.receive_message().value
-            self.storage.save_file(filename, data)
+            elif token == tokens.SAVE_FILE:
+                filename = connection.receive_message().value
+                data = connection.receive_message().value
+                self.storage.save_file(filename, data)
             
-        elif token == tokens.REMOVE_FILE:
-            filename = connection.receive_message().value
-            self.storage.remove_file(filename)
-        elif token == tokens.GET_FILE:
-            filename = connection.receive_message().value
-            data = self.storage.get_file(filename)
-            connection.send_message(LiteralMessage(data))
-        else:
-            return False
+            elif token == tokens.REMOVE_FILE:
+                filename = connection.receive_message().value
+                self.storage.remove_file(filename)
+            elif token == tokens.GET_FILE:
+                filename = connection.receive_message().value
+                data = self.storage.get_file(filename)
+                connection.send_message(LiteralMessage(data))
+            else:
+                return False
+        except BaseException as e:
+            connection.send_literal(tokens.ERROR_MESSAGE)
+            errorMessage = "The storege operation from '{}' resulted in a exception: {}".format(connection.get_addr(), e)
+            connection.send_literal(errorMessage)
+            logging.error(errorMessage)
+            print(errorMessage)
+            
         return True
     
     def try_decode_client_job(self, connection, token):

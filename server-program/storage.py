@@ -13,57 +13,75 @@ class Storage:
     def get_file_size(self, filename):
         self.lock.acquire()
         
-        file = open(self.mainPath + filename, 'rb')
-        file.seek(0, 2)
+        try:
+            file = open(self.mainPath + filename, 'rb')
+            file.seek(0, 2)
         
-        size = file.tell()
+            size = file.tell()
         
-        file.close()
-        
-        self.lock.release()
+            file.close()
+        except BaseException as e:
+            raise e
+        finally:
+            self.lock.release()
         
         return size
     
     def get_file(self, filename):
         self.lock.acquire()
         
-        file = open(self.mainPath + filename, 'rb')
-        file.seek(0, 2)
+        try:
+            file = open(self.mainPath + filename, 'rb')
+            file.seek(0, 2)
         
-        size = file.tell()
+            size = file.tell()
         
-        file.seek(0)
+            file.seek(0)
         
-        data = file.read(size)
+            data = file.read(size)
         
-        file.close()
-        
-        self.lock.release()
+            file.close()
+        except BaseException as e:
+            raise e
+        finally:
+            self.lock.release()
         
         return data
     
     def is_file(self, filename):
-        return os.path.isfile(self.mainPath + filename)
+        try:
+            return os.path.isfile(self.mainPath + filename)
+        except BaseException as e:
+            raise e
     
     def get_number_of_files(self):
-        
-        return len(os.listdir(self.mainPath))
+        try:
+            return len(os.listdir(self.mainPath))
+        except BaseException as e:
+            raise e
     
     def get_name_of_file(self, index):
-        return os.listdir(self.mainPath)[index]
+        try:
+            return os.listdir(self.mainPath)[index]
+        except BaseException as e:
+            raise e
     
     def save_file(self, filename, data):
         self.lock.acquire()
-        
-        file = open(self.mainPath + filename, 'wb')
-        file.write(data)
-        file.close()
-        
-        self.lock.release()
+        try:
+            file = open(self.mainPath + filename, 'wb')
+            file.write(data)
+            file.close()
+        except BaseException as e:
+            raise e
+        finally:
+            self.lock.release()
         
     def remove_file(self, filename):
         self.lock.acquire()
-        
-        os.remove(self.mainPath + filename)
-        
-        self.lock.release()
+        try:
+            os.remove(self.mainPath + filename)
+        except FileNotFoundError as e:
+            raise e
+        finally:
+            self.lock.release()
