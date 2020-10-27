@@ -31,7 +31,6 @@ class MinionApplication(BaseApplication):
                         print("The job is not valid, {}".format(message))
             except Exception as e:
                 print(e)
-                self.close()
     
     def decode_job(self, message):        
         action = None
