@@ -3,6 +3,7 @@ import types
 import logging
 import threading
 import tokens
+import random
 
 import asynclib
 from asynclib.taskManager import *
@@ -11,12 +12,12 @@ from asynclib.taskManager import *
 from storage import Storage
 from collections import deque
 
+from connection import Connection
 from clientConnection import ClientConnection
 from minionConnection import MinionConnection
 from message.literalMessage import LiteralMessage
-from message.objectMessage import ObjectMessage
 
-
+MSG_SIZE = 1024
 
 class Server:
     
@@ -68,8 +69,10 @@ class Server:
         while self.continueListening:
             conn, addr = self.socket.accept()
             
-            messageData = conn.recv(1024)
-            message = LiteralMessage.from_bytes(messageData)
+            connection = Connection(conn, addr)
+            message = connection.receive_message()
+            connection.send_message(LiteralMessage(tokens.SUCESSFUL_CONNECTION))
+            connection = None
             
             outputLog = "connected to {}:{} as a ".format(addr[0], addr[1])
             
@@ -96,46 +99,30 @@ class Server:
         while(self.continueMinions):
             
             self.minions_lock.acquire()
+        
             try:
                 minion = self.minions.popleft()
             except IndexError:
                 self.minions_lock.release()
                 continue
         
-            response = minion.receive_message()
             
-            # check if have a reponse
-            if response is not None:
+            message = minion.receive_message(True, 1.0)
+            
+            
+            if message is not None:
+                message = message.value
+                if self.try_decode_storages(minion, message):
+                    pass
+                else:
+                    print("Unknown message of value '{}', sended by the minion '{}'".format(message, minion.get_addr()))
                 
-                # acquire the client lock.
-                self.clients_lock.acquire()
-                addressedClient = None
-                
-                # search by client address
-                for client in self.clients:
-                    if client.addr == response.addressDestination:
-                        addressedClient = client
-                        break
-                
-                # if has client, send the response to the client.
-                if not addressedClient is None:
-                    message = ObjectMessage(response, 'miRs')
-                    client.send_message(message)
-                
-                #release the client lock.
-                self.clients_lock.release()
+            if not minion.is_closed():
+                self.minions.append(minion)
+            else:
+                print('')
         
-            self.minions.append(minion)
             self.minions_lock.release()
-        
-        
-        # close connections with minions.
-        self.minions_lock.acquire()
-        
-        for connection in self.minions:
-            connection.close()
-            
-        self.minions_lock.release()
     
     def clients_thread(self):
         self.continueClients = True
@@ -149,18 +136,19 @@ class Server:
             except IndexError:
                 self.clients_lock.release()
                 continue
-        
-            try:
-                message = client.receive_message().value
-            except Exception as e:
-                print(e)
-                logging.info(e)
-                continue
             
-            if message.value == tokens.GET_AVALIABLE_CORES:
-                self.get_avaliable_cores()
+            message = client.receive_message().value
+            
+            if self.try_decode_storages(client, message):
+                pass
+            elif self.try_decode_client_job(client, message):
+                pass
+            else:
+                print("Unknown message of value '{}', sended by the client '{}'".format(message, client.get_addr()))
+            
                 
-            self.clients.append(client)
+            if not client.is_closed():
+                self.clients.append(client)
         
             self.clients_lock.release()
         
@@ -175,15 +163,84 @@ class Server:
         
     def try_decode_storages(self, connection, token):
         if token == tokens.GET_FILE_SIZE:
-            pass
+            filename = connection.receive_message().value
+            size = self.storage.get_file_size(filename)
+            
+            connection.send_message(LiteralMessage(size))
+        elif token == tokens.IS_FILE:
+            filename = connection.receive_message().value
+            result = self.storage.is_file(filename)
+            connection.send_message(LiteralMessage(result))
+            
+        elif token == tokens.GET_NUMBER_OF_FILES:
+            number = self.storage.get_number_of_files()
+            connection.send_message(LiteralMessage(number))
+            
+        elif token == tokens.GET_NAME_OF_FILE:
+            index = connection.receive_message().value
+            name = self.storage.get_name_of_file(index)
+            connection.send_message(LiteralMessage(name))
+            
+        elif token == tokens.SAVE_FILE:
+            filename = connection.receive_message().value
+            data = connection.receive_message().value
+            self.storage.save_file(filename, data)
+            
+        elif token == tokens.REMOVE_FILE:
+            filename = connection.receive_message().value
+            self.storage.remove_file(filename)
+        elif token == tokens.GET_FILE:
+            filename = connection.receive_message().value
+            data = self.storage.get_file(filename)
+            connection.send_message(LiteralMessage(data))
+        else:
+            return False
+        return True
     
-    def get_avaliable_cores(self):
-        self.minions_lock.acquire()
+    def try_decode_client_job(self, connection, token):
+        filename = None
+        dstfilename = None
+        if (token == tokens.JOB_FLIP_HORIZONTAL or
+            token == tokens.JOB_FLIP_VERTICAL   or
+            token == tokens.JOB_ROTATE_90       or
+            token == tokens.JOB_ROTATE_180      or
+            token == tokens.JOB_ROTATE_270):
+            
+            filename = connection.receive_message().value
+            dstfilename = connection.receive_message().value
+        else:
+            return False
         
-        avaliable = 0
-        for minion in self.minions:
-            avaliable += minion.get_avaliable_cores()
+        if not self.storage.is_file(filename) or self.storage.is_file(dstfilename):
+            connection.send_literal(tokens.ERROR_MESSAGE)
+            loginfotext = "The job of client {} is not valid, the filename '{}' not exists or the dstfilename '{}' exists.".format(
+                connection.get_addr(),
+                filename, 
+                dstfilename
+                )
+            connection.send_literal(loginfotext)
+            logging.error(loginfotext)
+            print(loginfotext)
+            
+        else:
+            self.minions_lock.acquire()
+            minionIndex = random.randrange(0, len(self.minions))
+            
+            minion = self.minions[minionIndex]
+            coreIndex = minion.send_job(filename, dstfilename, token)
+            
+            loginfotext = "The Job '{}' submitted successfully by ty the client {} to the core {} of the minion {}".format(
+                tokens.token_to_str(token),
+                connection.get_addr(),
+                coreIndex,
+                minion.get_addr()
+                )
+            
+            connection.send_literal(tokens.INFO_MESSAGE)
+            connection.send_literal(loginfotext)
+            logging.info(loginfotext)
+            print(loginfotext)
+            
+            self.minions_lock.release() 
         
-        self.minions_lock.release()
-        
-        return avaliable
+        return True

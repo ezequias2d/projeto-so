@@ -1,36 +1,67 @@
 #identifies a connection to a client
-CLIENT_TOKEN =          0x00000000
+CLIENT_TOKEN =          0x0
 
-#get the avaliable cores in a minion or cluster of minion
-GET_AVALIABLE_CORES =   0x11111111
-
-#is possible to submit a job
-IS_POSSIBLE_JOB =       0x22222222
-
-JOB_FLIP_HORIZONTAL =   0x31313131
-JOB_FLIP_VERTICAL =     0x32323232
-JOB_ROTATE_90 =         0x34343434
-JOB_ROTATE_180 =        0x35353535
-JOB_ROTATE_270 =        0x36363636
+JOB_FLIP_HORIZONTAL =   0x31
+JOB_FLIP_VERTICAL =     0x32
+JOB_ROTATE_90 =         0x33
+JOB_ROTATE_180 =        0x34
+JOB_ROTATE_270 =        0x35
 
 
 #get size of file in storage
-GET_FILE_SIZE =         0x44444444
-#get data of part of file.
-GET_FILE_PART =         0x66666666
+GET_FILE_SIZE =         0x41
 #check if file exists.
-IS_FILE =               0x77777777
-GET_NUMBER_OF_FILES =   0x88888888
-GET_NAME_OF_FILE =      0x99999999
-ALLOCATE_FILE_MEMORY =  0xAAAAAAAA
-WRITE_PART_FILE_MEMORY =0xBBBBBBBB
+IS_FILE =               0x43
+GET_NUMBER_OF_FILES =   0x44
+GET_NAME_OF_FILE =      0x45
+SAVE_FILE =             0x46
+REMOVE_FILE =           0x47
+GET_FILE =              0x48
 
 
 
 #a info log message.
-INFO_MESSAGE =          0x88888888
+INFO_MESSAGE =          0x51
 #a error log message.
-ERROR_MESSAGE =         0x99999999
+ERROR_MESSAGE =         0x52
 
 #identifies a connection to a minion
-MINION_TOKEN =          0xFFFFFFFF
+MINION_TOKEN =          0xF
+SUCESSFUL_CONNECTION =  0xFF0
+
+def token_to_str(token):
+    if token == CLIENT_TOKEN:
+        return 'CLIENT TOKEN'
+    elif token == MINION_TOKEN:
+        return 'MINION TOKEN'
+    elif token == ERROR_MESSAGE:
+        return 'ERROR MESSAGE'
+    elif token == JOB_FLIP_HORIZONTAL:
+        return 'JOB FLIP HORIZONTAL'
+    elif token == JOB_FLIP_VERTICAL:
+        return 'JOB FLIP VERTICAL'
+    elif token == JOB_ROTATE_270:
+        return 'JOB ROTATE 270'
+    elif token == JOB_ROTATE_90:
+        return 'JOB ROTATE 90'
+    elif token == JOB_ROTATE_180:
+        return 'JOB ROTATE 180'
+    elif token == GET_FILE_SIZE:
+        return 'GET FILE SIZE'
+    elif token == IS_FILE:
+        return 'IS FILE'
+    elif token == GET_NUMBER_OF_FILES:
+        return 'GET NUMBER OF FILES'
+    elif token == GET_NAME_OF_FILE:
+        return 'GET NAME OF FILE'
+    elif token == SAVE_FILE:
+        return 'SAVE FILE'
+    elif token == REMOVE_FILE:
+        return 'REMOVE FILE'
+    elif token == GET_FILE:
+        return 'GET FILE'
+    elif token == INFO_MESSAGE:
+        return 'INFO MESSAGE'
+    elif token == SUCESSFUL_CONNECTION:
+        return 'SUCESSFUL CONNECTION'
+    

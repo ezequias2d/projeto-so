@@ -35,7 +35,8 @@ class LiteralMessage:
         valueFormat = None
         aux = None
         if isinstance(self.value, str):
-            aux = len(self.value)
+            value = self.value.encode('utf-8')
+            aux = len(value)
             valueFormat = 's'
             format += 'i{}s'.format(aux)
         elif isinstance(self.value, int):
@@ -47,14 +48,20 @@ class LiteralMessage:
         elif isinstance(self.value, bool):
             valueFormat = '?'
             format += '?'
-            
+        elif isinstance(self.value, bytes):
+            valueFormat = 'b'
+            format += 'i'
+        
         valueFormat = valueFormat.encode('ascii')
         
-        pack = None
-        if aux is not None:
-            pack = struct.pack(format, valueFormat, aux, self.value)
+        pack = b''
+        if valueFormat == b'b':
+            pack = struct.pack(format, valueFormat, len(self.value)) + self.value
         else:
-            pack = struct.pack(format, valueFormat, self.value)
+            if aux is not None:
+                pack = struct.pack(format, valueFormat, aux, value)
+            else:
+                pack = struct.pack(format, valueFormat, self.value)
             
         return 'l'.encode('ascii') + pack
     
@@ -79,12 +86,73 @@ class LiteralMessage:
         format = '!c'
         valueFormat, = struct.unpack(format, data[:1])
         data = data[1:]
-        if valueFormat == b's':
-            format = '!i'
-            aux = struct.unpack(format, data)
+        
+        if valueFormat == b'b':
+            format = '!i'  
+            aux = struct.unpack(format, data[:4])[0]
             data = data[4:]
-            format = '!{}s'.format(aux)
-        else:
-            format = '!{}'.format(valueFormat.decode('ascii'))
+            return LiteralMessage(data[:aux])
+        else:    
+            if valueFormat == b's':
+                format = '!i'
+                aux = struct.unpack(format, data[:4])[0]
+                data = data[4:]
+                format = '!{}s'.format(aux)
+                return LiteralMessage(struct.unpack(format, data[:struct.calcsize(format)])[0].decode('utf-8'))
+            else:
+                format = '!{}'.format(valueFormat.decode('ascii'))
+                return LiteralMessage(struct.unpack(format, data[:struct.calcsize(format)])[0])
+    
+    @staticmethod
+    def get_total_size_of_message(data):
+        if not LiteralMessage.is_literal_message(data):
+            raise ValueError("The data is not a literal message.")
+        data = data[1:]
+        
+        format = '!c'
+        valueFormat, = struct.unpack(format, data[:1])
+        data = data[1:]
+        
+        total = 2
+        if valueFormat == b'b':
+            format = '!i'  
+            aux = struct.unpack(format, data[:4])[0]
+            data = data[4:]
+            total += 4 + aux
+        else:    
+            if valueFormat == b's':
+                format = '!i'
+                aux = struct.unpack(format, data[:4])[0]
+                data = data[4:]
+                total += 4
+                format = '!{}s'.format(aux)
+            else:
+                format = '!{}'.format(valueFormat.decode('ascii'))
+            total += struct.calcsize(format)
             
-        return LiteralMessage(struct.unpack(format, data)[0])
+        return total
+    
+    @staticmethod
+    def remove_first_message(data):
+        if not LiteralMessage.is_literal_message(data):
+            raise ValueError("The data is not a literal message.")
+        data = data[1:]
+        
+        format = '!c'
+        valueFormat, = struct.unpack(format, data[:1])
+        data = data[1:]
+        
+        if valueFormat == b'b':
+            format = '!i'  
+            aux = struct.unpack(format, data[:4])[0]
+            data = data[4:]
+            return data[aux:]
+        else:    
+            if valueFormat == b's':
+                format = '!i'
+                aux = struct.unpack(format, data[:4])[0]
+                data = data[4:]
+                format = '!{}s'.format(aux)
+            else:
+                format = '!{}'.format(valueFormat.decode('ascii'))
+            return data[struct.calcsize(format):]

@@ -1,7 +1,7 @@
 # Copyright (c) 2020 Ezequias Silva.
 # This code is licensed under MIT license (see LICENSE for details).
 
-from task import Task
+from asynclib.task import Task
 
 # a work to execute in a TaskThread of a TaskManager.
 class WorkItem:

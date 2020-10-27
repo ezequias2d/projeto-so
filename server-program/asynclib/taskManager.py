@@ -20,6 +20,7 @@ class TaskManager:
         if numberOfThreads == 0:
             numberOfThreads = os.cpu_count()
         
+        self.number_of_threads = numberOfThreads
         self._pool = []
         
         for i in range(numberOfThreads):
@@ -42,6 +43,7 @@ class TaskManager:
         
         workItem = WorkItem(function, args, kwargs)
         taskThread.run(workItem)
+        workItem.task.index = index
         
         return workItem.task
     
@@ -53,5 +55,3 @@ class TaskManager:
         """
         for taskThread in self._pool:
             taskThread.join(ignoreWorkItems)
-        
-    

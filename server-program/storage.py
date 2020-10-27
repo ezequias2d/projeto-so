@@ -5,6 +5,9 @@ class Storage:
     
     def __init__(self):
         self.mainPath = 'resources/'
+        if not os.path.exists(self.mainPath):
+            os.makedirs(self.mainPath)
+            
         self.lock = threading.Lock()
     
     def get_file_size(self, filename):
@@ -21,13 +24,17 @@ class Storage:
         
         return size
     
-    def get_file_part(self, filename, part, partSize):
+    def get_file(self, filename):
         self.lock.acquire()
-
-        file = open(self.mainPath + filename, 'rb')
-        file.seek(part * partSize)
         
-        data = file.read(partSize)
+        file = open(self.mainPath + filename, 'rb')
+        file.seek(0, 2)
+        
+        size = file.tell()
+        
+        file.seek(0)
+        
+        data = file.read(size)
         
         file.close()
         
@@ -39,27 +46,24 @@ class Storage:
         return os.path.isfile(self.mainPath + filename)
     
     def get_number_of_files(self):
+        
         return len(os.listdir(self.mainPath))
     
     def get_name_of_file(self, index):
         return os.listdir(self.mainPath)[index]
     
-    def allocate_file_memory(self, filename, size):
+    def save_file(self, filename, data):
         self.lock.acquire()
         
         file = open(self.mainPath + filename, 'wb')
-        file.seek(size - 1)
-        file.write(b'\0')
+        file.write(data)
         file.close()
         
         self.lock.release()
         
-    def write_part_file_memory(self, filename, data, part, partSize):
+    def remove_file(self, filename):
         self.lock.acquire()
         
-        file = open(self.mainPath + filename, 'wb')
-        file.seek(part * partSize)
-        file.write(data)
-        file.close()
+        os.remove(self.mainPath + filename)
         
         self.lock.release()

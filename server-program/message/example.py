@@ -1,6 +1,5 @@
 # Copyright (c) 2020 Ezequias Silva.
 # This code is licensed under MIT license (see LICENSE for details).
-from objectMessage import ObjectMessage
 from literalMessage import LiteralMessage
 
 def literal_message_example():    
@@ -9,21 +8,38 @@ def literal_message_example():
     print(data)
     messageDecoded = LiteralMessage.from_bytes(data)
     print(messageDecoded.value)
+    
+def literal_message_example2():
+    message1 = LiteralMessage(1)
+    message2 = LiteralMessage(2)
+    message3 = LiteralMessage(b'1234567890')
+    
+    data = message1.get_bytes() + message2.get_bytes() + message3.get_bytes()
+    print(data)
+    
+    print('total 1 size: {}'.format(LiteralMessage.get_total_size_of_message(data)))
+    messageDecoded1 = LiteralMessage.from_bytes(data)
+    data = LiteralMessage.remove_first_message(data)
+    
+    print('total 2 size: {}'.format(LiteralMessage.get_total_size_of_message(data)))
+    messageDecoded2 = LiteralMessage.from_bytes(data)
+    data = LiteralMessage.remove_first_message(data)
+    
+    print('total 3 size: {}'.format(LiteralMessage.get_total_size_of_message(data)))
+    messageDecoded3 = LiteralMessage.from_bytes(data)
+    data = LiteralMessage.remove_first_message(data)
+    
+    print(messageDecoded1.value)
+    print(messageDecoded2.value)
+    print(messageDecoded3.value)
 
-class TestData:
-    def __init__(self, a, b, c):
-        self.a = a
-        self.b = b 
-        self.c = c
-    def __str__(self):
-        return '{}, {}, {}'.format(self.a, self.b, self.c)
-
-def object_message_test():
-    message = ObjectMessage(TestData(1, 2, 3), 'test')
+def literal_message_example3():
+    message = LiteralMessage('hello world, ~ á çç')
     data = message.get_bytes()
     print(data)
-    messageDecoded = ObjectMessage.from_bytes(data, TestData)
-    print(messageDecoded.value)
+    message = LiteralMessage.from_bytes(data)
+    print(message.value)
 
-literal_message_example()
-object_message_test()
+
+#literal_message_example()
+literal_message_example3()

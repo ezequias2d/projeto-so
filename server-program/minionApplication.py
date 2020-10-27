@@ -1,30 +1,78 @@
 import socket
 import tokens
 import connection
-
+import io
+import os
+from PIL import Image
 from message.literalMessage import LiteralMessage
+from baseApplication import BaseApplication
+import asynclib
+from asynclib.taskManager import *
 
-class MinionApplication(connection.Connection):
+class MinionApplication(BaseApplication):
     
-    def __init__(self, host, port):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-        super().__init__(sock, '{}:{}'.format(host, port))
+    def __init__(self, host, port):        
+        super().__init__(host, port, tokens.MINION_TOKEN)
+        self.pool = TaskManager('minion_{}_{}_thread_'.format(host, port))
         
+        self.loop()
+        self.pool.join()
         
-        self.send_literal(tokens.MINION_TOKEN)
-        
-        while(True):
-            message = self.receive_message()
-            
-            if message.value == tokens.JOB_FLIP_HORIZONTAL:
-                pass
-                
-            
+    def loop(self):
+        while not self.is_closed():
+            message = self.receive_message(True, 1.0)
+            if message is not None:
+                message = message.value
+                if self.decode_job(message):
+                    pass
+                else:
+                    print("The job is not valid, {}".format(message))
     
-    def send_literal(self, value):
-        literalMessage = LiteralMessage(value)
-        self.send_message(literalMessage.get_bytes())
-        
+    def decode_job(self, message):        
+        action = None
+        if message == tokens.JOB_FLIP_HORIZONTAL:
+            action = Image.FLIP_LEFT_RIGHT
 
-MinionApplication('127.0.0.1', 50007)
+        elif message == tokens.JOB_FLIP_VERTICAL:
+            action = Image.FLIP_TOP_BOTTOM
+            
+        elif message == tokens.JOB_ROTATE_90:
+            action = Image.ROTATE_90
+            
+        elif message == tokens.JOB_ROTATE_180:
+            action = Image.ROTATE_180
+            
+        elif message == tokens.JOB_ROTATE_270:
+            action = Image.ROTATE_270
+        else:
+             return False
+         
+        filename = self.receive_message().value
+        dstfilename = self.receive_message().value
+            
+        task = self.pool.run(self.job_thread, args = (filename, dstfilename, action))
+        self.send_literal(task.index)
+        
+        return True
+    
+    def job_thread(self, filename, dstfilename, action):
+        img = self.load_image(filename)
+        img = img.transpose(action)
+        self.save_image(img, dstfilename)
+    
+    def load_image(self, filename):
+        file = self.get_file(filename)
+        return Image.open(io.BytesIO(file))
+    
+    def save_image(self, image, filename):
+        bytes = io.BytesIO()
+        image.save(bytes, image.format)
+        bytes = bytes.getvalue()
+        
+        self.send_literal(tokens.SAVE_FILE)
+        self.send_literal(os.path.basename(filename))
+        self.send_literal(bytes)
+        
+        
+host = input('Host: ')
+MinionApplication(host, 50007)

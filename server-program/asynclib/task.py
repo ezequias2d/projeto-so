@@ -14,6 +14,7 @@ class Task:
         self.exception = None
         self._lock = Lock()
         self._lock.acquire()
+        self.index = -1
     
     def wait(self):
         """Wait for the task completion.
