@@ -150,7 +150,7 @@ class Server:
                 continue
             
             try:
-                message = client.receive_message().value
+                message = client.receive_message(True, 1.0)
             except Exception as e:
                 message = "client '{}':{}".format(client.get_addr(), e)
                 print(message)
@@ -158,12 +158,15 @@ class Server:
                 self.clients_lock.release()
                 continue
             
-            if self.try_decode_storages(client, message):
-                pass
-            elif self.try_decode_client_job(client, message):
-                pass
-            else:
-                print("Unknown message of value '{}', sended by the client '{}'".format(message, client.get_addr()))
+            if message is not None:
+                message = message.value
+                
+                if self.try_decode_storages(client, message):
+                    pass
+                elif self.try_decode_client_job(client, message):
+                    pass
+                else:
+                    print("Unknown message of value '{}', sended by the client '{}'".format(message, client.get_addr()))
             
                 
             if not client.is_closed():
