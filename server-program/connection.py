@@ -93,6 +93,7 @@ class Connection:
             # when the connection is closed, recv return a buffer with length 0.
             if len(msg) == 0:
                 self.close(False)
+                self.release(blocking)
                 raise Exception('Connection is closed with the {}.'.format(self._addr))
             
             self._rbuffer += msg
