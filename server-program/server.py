@@ -21,14 +21,14 @@ MSG_SIZE = 1024
 
 class Server:
     
-    def __init__(self, port=50007):
+    def __init__(self, host, port=50007):
         """Initialize the server object.
 
         Args:
             port (int): Port.
         """
         #socket.gethostbyname(socket.gethostname())
-        self.host = '127.0.0.1'
+        self.host = host
         self.port = port
         self.storage = Storage()
         self.taskManager = TaskManager('server_thread_')

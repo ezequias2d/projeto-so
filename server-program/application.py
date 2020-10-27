@@ -1,6 +1,7 @@
 import server
 import socket
 
-server = server.Server()
+host = input("Host: ")
+server = server.Server(host)
 
 server.start()

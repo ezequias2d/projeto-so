@@ -126,8 +126,8 @@ class Connection:
             self.release(blocking)
             raise Exception('The Connection has been closed.')
         else:
-            self._conn.shutdown()
-            self._conn.close(socket.SHUT_RDWR)
+            self._conn.shutdown(socket.SHUT_RDWR)
+            self._conn.close()
             self._closed = True
             
         self.release(blocking)
